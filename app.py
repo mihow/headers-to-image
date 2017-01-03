@@ -9,8 +9,8 @@ app = Flask(__name__)
 
 
 def request_headers_str():
-    headers = ["{}: {}".format(k, v) for k,v in request.headers.items()]
-    headers_str = "\n\r".join(headers)
+    headers = [u"{}: {}".format(k, v) for k,v in request.headers.items()]
+    headers_str = u"\n\r".join(headers)
     return headers_str
 
 def create_image(txt):
