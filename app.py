@@ -8,6 +8,7 @@ import StringIO
 
 
 app = Flask(__name__)
+application = app
 
 
 def mask_sensitive_data(data):
