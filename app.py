@@ -117,8 +117,7 @@ def embed():
     <p>
     <img src="{{ url_for('as_image', _external=True) }}" 
       title="Request data as image"
-      alt="This should be an image with HTTP headers, etc"
-      width="300">
+      alt="This should be an image with HTTP headers, etc">
     </p>
     <p>text after image</p>
     <p>&nbsp;</p>
