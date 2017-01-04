@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+import StringIO
+
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
 from flask.json import JSONEncoder
 from PIL import Image, ImageDraw
-import StringIO
+from nocache import nocache
 
 
 app = Flask(__name__)
@@ -48,7 +50,7 @@ def request_data_str():
     return txt
 
 def create_image(txt):
-    image = Image.new("RGBA", (1024,2048), (255,255,255))
+    image = Image.new("RGBA", (1024,1024), (255,255,255))
     draw = ImageDraw.Draw(image)
 
     draw.text((10, 0), txt, (0,0,0))
@@ -61,6 +63,7 @@ def serve_image(pil_img):
     return send_file(img_io, mimetype='image/png')
 
 @app.route('/request_data.png')
+@nocache
 def as_image():
     txt = request_data_str()
     img = create_image(txt) 
@@ -102,4 +105,37 @@ def as_json():
 
 @app.route('/')
 def index():
-    return redirect(url_for('as_html'))
+    return redirect(url_for('embed'))
+
+@app.route('/embed')
+def embed():
+    tmpl = """
+    <!doctype html>
+    <html><body>
+    <h2>Select the image below and paste in your email body:</h2>
+    <p>text before image</p>
+    <p>
+    <img src="{{ url_for('as_image', _external=True) }}" 
+      title="Request data as image"
+      alt="This should be an image with HTTP headers, etc"
+      width="300">
+    </p>
+    <p>text after image</p>
+    <p>&nbsp;</p>
+    <h2>Or here is html for the image tag you can use:</h2>
+    <p>
+    <input 
+      type="text" 
+      value='<img src="{{ url_for('as_image', _external=True) }}">' 
+      style="width:90%" />
+    </p>
+    <h2>Links</h2>
+    <ul>
+      <li><a href="{{ url_for('as_html') }}">
+        Show request data as HTML</a></li>
+      <li><a href="{{ url_for('as_json') }}">
+        Show request data as JSON</a></li>
+    </ul>
+    </body></html>
+    """
+    return render_template_string(tmpl)
