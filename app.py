@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import StringIO
+import datetime as dt
 
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
 from flask.json import JSONEncoder
@@ -35,8 +36,40 @@ def request_data():
     data = mask_sensitive_data(data)
     return data
 
-def request_data_str():
-    data = request_data()
+def summarize(data):
+    #@TODO add random background color
+    keys_of_interest = [
+        "USER-AGENT",
+        "HOST",
+        "HTTP_REFERER",
+        "REFERER",
+        "REMOTE_ADDR",
+        "X-FORWARDED-FOR",
+        "HTTP_X_FORWARDED_FOR",
+        "REQUEST_URI",
+
+    ]
+    summary = {}
+    summary['TIMESTAMP'] = dt.datetime.now()
+
+    if hasattr(data, 'items'):
+        for k,v, in data.items():
+            if hasattr(v, 'items'):
+                for kk in v:
+                    if kk.upper() in keys_of_interest:
+                        summary[kk] = v[kk]
+            else:
+                if k.upper() in keys_of_interest:
+                    summary[k] = data[k]
+    return summary
+                        
+
+    
+
+    data = mask_sensitive_data(data)
+    return data
+
+def data_to_str(data):
     tmpl = """
     {% for k,v in data.items() %}{% if v.items %}{{ k }}: 
     {% for kk, vv in v.items() %}
@@ -49,8 +82,8 @@ def request_data_str():
     txt = txt.encode('utf8')
     return txt
 
-def create_image(txt):
-    image = Image.new("RGBA", (1024,2048), (255,255,255))
+def create_image(txt, height=2048):
+    image = Image.new("RGBA", (1024,height), (255,255,255))
     draw = ImageDraw.Draw(image)
 
     draw.text((10, 0), txt, (0,0,0))
@@ -58,14 +91,14 @@ def create_image(txt):
 
 def serve_image(pil_img):
     img_io = StringIO.StringIO()
-    pil_img.save(img_io, 'PNG', quality=90)
+    pil_img.save(img_io, 'JPEG', quality=90)
     img_io.seek(0)
-    return send_file(img_io, mimetype='image/png')
+    return send_file(img_io, mimetype='image/jpeg')
 
-@app.route('/request_data.png')
+@app.route('/request_data.jpg')
 @nocache
 def as_image():
-    txt = request_data_str()
+    txt = data_to_str(request_data())
     img = create_image(txt) 
     return serve_image(img)
 
@@ -107,6 +140,17 @@ def as_json():
 def index():
     return redirect(url_for('embed'))
 
+@app.route('/summary.jpg')
+def summary_image():
+    txt = data_to_str(summarize(request_data()))
+    img = create_image(txt, height=600) 
+    return serve_image(img)
+
+@app.route('/summary.json')
+def summary():
+    data = summarize(request_data())
+    return jsonify(data) 
+
 @app.route('/embed')
 def embed():
     tmpl = """
@@ -115,7 +159,7 @@ def embed():
     <h2>Select the image below and paste in your email body:</h2>
     <p>text before image</p>
     <p>
-    <img src="{{ url_for('as_image', _external=True) }}" 
+    <img src="{{ url_for('summary_image', _external=True) }}" 
       title="Request data as image"
       alt="This should be an image with HTTP headers, etc">
     </p>
@@ -125,7 +169,7 @@ def embed():
     <p>
     <input 
       type="text" 
-      value='<img src="{{ url_for('as_image', _external=True) }}">' 
+      value='<img src="{{ url_for('summary_image', _external=True) }}">' 
       style="width:90%" />
     </p>
     <h2>Links</h2>
