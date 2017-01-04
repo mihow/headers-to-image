@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import StringIO
 import datetime as dt
+import random
 
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
 from flask.json import JSONEncoder
@@ -13,6 +14,9 @@ from nocache import nocache
 app = Flask(__name__)
 application = app
 
+
+def cache_buster():
+    return random.randint(00000000000, 999999999999)
 
 def mask_sensitive_data(data):
     sensi_keys = ['KEY', 'PASS', '_ID', '-ID',]
@@ -159,7 +163,7 @@ def embed():
     <h2>Select the image below and paste in your email body:</h2>
     <p>text before image</p>
     <p>
-    <img src="{{ url_for('summary_image', _external=True) }}" 
+    <img src="{{ url_for('summary_image', _external=True) }}?{{ buster1 }}" 
       title="Request data as image"
       alt="This should be an image with HTTP headers, etc">
     </p>
@@ -169,7 +173,7 @@ def embed():
     <p>
     <input 
       type="text" 
-      value='<img src="{{ url_for('summary_image', _external=True) }}">' 
+      value='<img src="{{ url_for('summary_image', _external=True) }}?{{ buster2 }}">' 
       style="width:90%" />
     </p>
     <h2>Links</h2>
@@ -181,4 +185,5 @@ def embed():
     </ul>
     </body></html>
     """
-    return render_template_string(tmpl)
+    return render_template_string(tmpl, 
+            buster1=cache_buster(), buster2=cache_buster())
