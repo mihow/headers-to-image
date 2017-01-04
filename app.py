@@ -50,7 +50,7 @@ def request_data_str():
     return txt
 
 def create_image(txt):
-    image = Image.new("RGBA", (1024,1024), (255,255,255))
+    image = Image.new("RGBA", (1024,2048), (255,255,255))
     draw = ImageDraw.Draw(image)
 
     draw.text((10, 0), txt, (0,0,0))
