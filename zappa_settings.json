@@ -1,6 +1,9 @@
 {
     "dev": {
         "app_function": "app.app", 
-        "s3_bucket": "zappa-headers-to-image"
+        "s3_bucket": "zappa-headers-to-image",
+        "environment_variables": {
+            "REMOTE_TEST_API_KEY": "123ABCDEFG"
+        }
     }
 }

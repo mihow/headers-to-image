@@ -10,11 +10,26 @@ import StringIO
 app = Flask(__name__)
 
 
+def mask_sensitive_data(data):
+    sensi_keys = ['KEY', 'PASS', '_ID', '-ID',]
+    if hasattr(data, 'items'):
+        for k,v, in data.items():
+            if hasattr(v, 'items'):
+                v = mask_sensitive_data(v)
+            else:
+                for sk in sensi_keys:
+                    if sk in k.upper():
+                        data[k] = "*******"
+    return data
+             
 def request_data():
     data = {} 
     data['headers'] = dict(request.headers) # HTTP headers
     data['query_args'] = dict(request.args)  # GET & POST vars
     data['environ'] = dict(request.environ)
+    data['sensitive_test'] = {'TEST_API_KEY': 1234567878999,
+                              'TEST_PASSWORD': 'happybirthday'}
+    data = mask_sensitive_data(data)
     return data
 
 def request_data_str():
