@@ -182,9 +182,12 @@ def embed():
     <h2>Select the image below and paste in your email body:</h2>
     <p>text before image</p>
     <p>
-    <img src="{{ url_for('summary_image', _external=True) }}?{{ buster1 }}" 
+    <a href="{{ url_for('location_image', _external=True) }}?{{ buster1 }}"
+      style="border:1px solid blue;">
+    <img src="{{ url_for('location_image', _external=True) }}?{{ buster1 }}" 
       title="Request data as image"
       alt="This should be an image with HTTP headers, etc">
+    </a>
     </p>
     <p>text after image</p>
     <p>&nbsp;</p>
@@ -192,7 +195,7 @@ def embed():
     <p>
     <input 
       type="text" 
-      value='<img src="{{ url_for('summary_image', _external=True) }}?{{ buster2 }}">' 
+      value='<img src="{{ url_for('location_image', _external=True) }}?{{ buster2 }}">' 
       style="width:90%" />
     </p>
     <h2>Links</h2>
@@ -201,6 +204,8 @@ def embed():
         Show request data as HTML</a></li>
       <li><a href="{{ url_for('as_json') }}">
         Show request data as JSON</a></li>
+      <li><a href="{{ url_for('location') }}">
+        Show locaton data as JSON</a></li>
     </ul>
     </body></html>
     """
