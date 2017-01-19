@@ -315,7 +315,7 @@ def get_location(request):
 @app.route('/email', methods=['POST'])
 def send_email():
     email = request.form['email']
-    body = 'Hello! Your image is below: <br><br> <img src="{}">'.format(
+    body = 'Hello! Your image is below: <br><br><img src="{}"><br><br>-Footer'.format(
 	url_for('location_image', request_id=cache_buster(), _external=True))
 
     result = ses.send_email(
@@ -327,7 +327,7 @@ def send_email():
 	    },
 	    Message={
 		'Subject': {
-		    'Data': 'Footer project test: Dynamic image with geolocation',
+		    'Data': 'Footer project test #{}'.format(cache_buster()),
 		},
 		'Body': {
 		    #'Text': {
