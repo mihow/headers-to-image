@@ -102,6 +102,7 @@ def serve_image(pil_img):
     pil_img.save(img_io, 'JPEG', quality=90)
     img_io.seek(0)
     response = send_file(img_io, mimetype='image/jpeg')
+    # See https://emailexpert.org/gmail-tracking-changes-the-fix-what-you-need-to-know/
     response.content_length = 0
     return response
 
