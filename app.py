@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+import os
 import StringIO
 import datetime as dt
 import random
@@ -166,7 +167,7 @@ def location_image():
     else:
         destination_name = "Unknown"
     txt = "{} => {}".format(source, destination_name)
-    img = create_image(txt, width=200, height=10) 
+    img = create_image(txt, width=200, height=12) 
     return serve_image(img)
 
 @app.route('/location.json')
@@ -178,25 +179,31 @@ def location():
 def embed():
     tmpl = """
     <!doctype html>
-    <html><body>
+    <html><body style="
+        font-family:monospace; 
+        font-size: medium;
+        width: 40em;
+        border: 1px solid blue;
+        padding: 2%;
+        margin: 4% auto;">
     <h2>Select the image below and paste in your email body:</h2>
-    <p>text before image</p>
+    <p>&nbsp;</p>
+    <div style="text-align:center; background: #eee; width: 80%; margin: 0 auto;">
+    <p>[-- text before image --]<br><br></p>
     <p>
-    <a href="{{ url_for('location_image', _external=True) }}?{{ buster1 }}"
-      style="border:1px solid blue;">
     <img src="{{ url_for('location_image', _external=True) }}?{{ buster1 }}" 
       title="Request data as image"
       alt="This should be an image with HTTP headers, etc">
-    </a>
     </p>
-    <p>text after image</p>
+    <p><br>[-- text after image --]</p>
+    </div>
     <p>&nbsp;</p>
     <h2>Or here is html for the image tag you can use:</h2>
     <p>
     <input 
       type="text" 
       value='<img src="{{ url_for('location_image', _external=True) }}?{{ buster2 }}">' 
-      style="width:90%" />
+      style="width:95%" />
     </p>
     <h2>Links</h2>
     <ul>
@@ -214,6 +221,9 @@ def embed():
 
 
 def get_client_ip(request):
+    if os.environ.get('FLASK_DEBUG'):
+        return '73.67.227.118'
+
     potential_ip_keys = [
 	'HTTP_X_FORWARDED_FOR', 
 	'X_FORWARDED_FOR',
@@ -263,11 +273,12 @@ def get_location(request):
     # @TODO make more robust method of finding user's real IP
     # https://github.com/mihow/django-ipware
     ip_address = get_client_ip(request)
-    lookup = geoip2.database.Reader('GeoLite2-City.mmdb')
+    dbpath = os.path.join(os.path.dirname(__file__), 'GeoLite2-City.mmdb')
+    lookup = geoip2.database.Reader(dbpath)
     try:
         resp = lookup.city(ip_address)
-        location_name = resp.most_specific.name
-        print(location_name)
+        # location_name = resp.most_specific.name
+        # print(location_name)
         lookup.close()
         return resp 
     except AddressNotFoundError:
