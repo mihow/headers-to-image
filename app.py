@@ -5,6 +5,7 @@ import os
 import StringIO
 import datetime as dt
 import random
+import boto3
 
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
 from flask.json import JSONEncoder
@@ -14,6 +15,8 @@ from nocache import nocache
 
 app = Flask(__name__)
 application = app
+
+ses = boto3.client('ses')
 
 SOURCE_CITY = "New York"
 
@@ -193,6 +196,7 @@ def embed():
         border: 1px solid blue;
         padding: 2%;
         margin: 4% auto;">
+
     <h2>Select the image below and paste in your email body:</h2>
     <p>&nbsp;</p>
     <div style="text-align:center; background: #eee; width: 80%; margin: 0 auto;">
@@ -205,6 +209,21 @@ def embed():
     <p><br>[-- text after image --]</p>
     </div>
     <p>&nbsp;</p>
+
+    <h2>Send a test email:</h2>
+    <form action="/email" method="POST">
+    <p>
+    <input 
+      name="email"
+      type="text" 
+      placeholder="youremail@example.org"
+      style="width:95%" />
+    </p>
+    <p>
+    <input type="submit" value="Send!"> 
+    </p>
+    <p>&nbsp;</p>
+
     <h2>Or here is html for the image tag you can use:</h2>
     <p>
     <input 
@@ -212,6 +231,7 @@ def embed():
       value='<img src="{{ url_for('location_image', request_id=buster2, _external=True) }}">' 
       style="width:95%" />
     </p>
+
     <h2>Links</h2>
     <ul>
       <li><a href="{{ url_for('as_html') }}">
@@ -290,3 +310,39 @@ def get_location(request):
         return resp 
     except AddressNotFoundError:
         return None
+
+
+@app.route('/email', methods=['POST'])
+def send_email():
+    email = request.form['email']
+    body = 'Hello! Your image is below: <br><br> <img src="{}">'.format(
+	url_for('location_image', request_id=cache_buster(), _external=True))
+
+    result = ses.send_email(
+	Source='footer@bunsen.town',
+	    Destination={
+		'ToAddresses': [
+		    email,
+		],
+	    },
+	    Message={
+		'Subject': {
+		    'Data': 'Footer project test: Dynamic image with geolocation',
+		},
+		'Body': {
+		    #'Text': {
+		    #    'Data': 'string',
+		    #    'Charset': 'string'
+		    #},
+		    'Html': {
+			'Data': body,
+		    }
+		}
+	    },
+	)
+     
+    status_code = result.get('ResponseMetadata').get('HTTPStatusCode')
+    if str(status_code).startswith('2'):
+	return "Success!" 
+    else:
+        return "Something went wrong :("
