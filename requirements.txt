@@ -1,3 +1,4 @@
 flask
 zappa
 Pillow
+geoip2
