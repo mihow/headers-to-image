@@ -96,11 +96,14 @@ def create_image(txt, width=1024, height=2048):
     draw.text((10, 0), txt, (0,0,0))
     return image
 
+@nocache
 def serve_image(pil_img):
     img_io = StringIO.StringIO()
     pil_img.save(img_io, 'JPEG', quality=90)
     img_io.seek(0)
-    return send_file(img_io, mimetype='image/jpeg')
+    response = send_file(img_io, mimetype='image/jpeg')
+    response.content_length = 0
+    return response
 
 @app.route('/request_data.jpg')
 @nocache
@@ -148,6 +151,7 @@ def index():
     return redirect(url_for('embed'))
 
 @app.route('/summary.jpg')
+@nocache
 def summary_image():
     txt = data_to_str(summarize(request_data()))
     img = create_image(txt, height=600) 
@@ -159,7 +163,9 @@ def summary():
     return jsonify(data) 
 
 @app.route('/location.jpg')
-def location_image():
+@app.route('/location-<int:request_id>.jpg')
+@nocache
+def location_image(request_id=None):
     source = SOURCE_CITY
     destination = get_location(request_data())
     if destination:
@@ -191,7 +197,7 @@ def embed():
     <div style="text-align:center; background: #eee; width: 80%; margin: 0 auto;">
     <p>[-- text before image --]<br><br></p>
     <p>
-    <img src="{{ url_for('location_image', _external=True) }}?{{ buster1 }}" 
+    <img src="{{ url_for('location_image', _external=True, request_id=buster1) }}" 
       title="Request data as image"
       alt="This should be an image with HTTP headers, etc">
     </p>
@@ -202,7 +208,7 @@ def embed():
     <p>
     <input 
       type="text" 
-      value='<img src="{{ url_for('location_image', _external=True) }}?{{ buster2 }}">' 
+      value='<img src="{{ url_for('location_image', request_id=buster2, _external=True) }}">' 
       style="width:95%" />
     </p>
     <h2>Links</h2>
