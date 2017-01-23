@@ -172,12 +172,13 @@ def summary():
 def location_image(request_id=None):
     source = SOURCE_CITY
     destination = get_location(request_data())
+    language = get_client_language(request_data())
     if destination:
         destination_name = destination.city.name
     else:
         destination_name = "Unknown"
-    txt = "{} => {}".format(source, destination_name)
-    img = create_image(txt, width=200, height=12) 
+    txt = "{} => {} \r\n{}".format(source, destination_name, language)
+    img = create_image(txt, width=200, height=32) 
     return serve_image(img)
 
 @app.route('/location.json')
@@ -247,40 +248,45 @@ def embed():
             buster1=cache_buster(), buster2=cache_buster())
 
 
+def get_client_language(request):
+    lang = request['environ'].get('HTTP_ACCEPT_LANGUAGE')
+    # @TODO convert lang code to something more human friendly
+    return lang
+
 def get_client_ip(request):
     if os.environ.get('FLASK_DEBUG'):
         return '73.67.227.118'
 
     potential_ip_keys = [
-	'HTTP_X_FORWARDED_FOR', 
-	'X_FORWARDED_FOR',
-	'HTTP_CLIENT_IP',
-	'HTTP_X_REAL_IP',
-	'HTTP_X_FORWARDED',
-	'HTTP_X_CLUSTER_CLIENT_IP',
-	'HTTP_FORWARDED_FOR',
-	'HTTP_FORWARDED',
-	'HTTP_VIA',
-	'REMOTE_ADDR', 
+    'HTTP_X_FORWARDED_FOR', 
+    'X_FORWARDED_FOR',
+    'HTTP_CLIENT_IP',
+    'HTTP_X_REAL_IP',
+    'HTTP_X_FORWARDED',
+    'HTTP_X_CLUSTER_CLIENT_IP',
+    'HTTP_FORWARDED_FOR',
+    'HTTP_FORWARDED',
+    'HTTP_VIA',
+    'REMOTE_ADDR', 
     ]
 
     ignore_ip_prefixes = [
-	'0.',  # externally non-routable
-	'10.',  # class A private block
-	'169.254.',  # link-local block
-	'172.16.', '172.17.', '172.18.', '172.19.',
-	'172.20.', '172.21.', '172.22.', '172.23.',
-	'172.24.', '172.25.', '172.26.', '172.27.',
-	'172.28.', '172.29.', '172.30.', '172.31.',  # class B private blocks
-	'192.0.2.',  # reserved for documentation and example code
-	'192.168.',  # class C private block
-	'255.255.255.',  # IPv4 broadcast address
-	'2001:db8:',  # reserved for documentation and example code
-	'fc00:',  # IPv6 private block
-	'fe80:',  # link-local unicast
-	'ff00:',  # IPv6 multicast
-	'127.',  # IPv4 loopback device
-	'::1',  # IPv6 loopback device
+    '0.',  # externally non-routable
+    '10.',  # class A private block
+    '169.254.',  # link-local block
+    '172.16.', '172.17.', '172.18.', '172.19.',
+    '172.20.', '172.21.', '172.22.', '172.23.',
+    '172.24.', '172.25.', '172.26.', '172.27.',
+    '172.28.', '172.29.', '172.30.', '172.31.',  # class B private blocks
+    '192.0.2.',  # reserved for documentation and example code
+    '192.168.',  # class C private block
+    '255.255.255.',  # IPv4 broadcast address
+    '2001:db8:',  # reserved for documentation and example code
+    'fc00:',  # IPv6 private block
+    'fe80:',  # link-local unicast
+    'ff00:',  # IPv6 multicast
+    '127.',  # IPv4 loopback device
+    '::1',  # IPv6 loopback device
     ]
 
     for key in potential_ip_keys:
@@ -316,33 +322,33 @@ def get_location(request):
 def send_email():
     email = request.form['email']
     body = 'Hello! Your image is below: <br><br><img src="{}"><br><br>-Footer'.format(
-	url_for('location_image', request_id=cache_buster(), _external=True))
+    url_for('location_image', request_id=cache_buster(), _external=True))
 
     result = ses.send_email(
-	Source='footer@bunsen.town',
-	    Destination={
-		'ToAddresses': [
-		    email,
-		],
-	    },
-	    Message={
-		'Subject': {
-		    'Data': 'Footer project test #{}'.format(cache_buster()),
-		},
-		'Body': {
-		    #'Text': {
-		    #    'Data': 'string',
-		    #    'Charset': 'string'
-		    #},
-		    'Html': {
-			'Data': body,
-		    }
-		}
-	    },
-	)
+    Source='footer@bunsen.town',
+        Destination={
+        'ToAddresses': [
+            email,
+        ],
+        },
+        Message={
+        'Subject': {
+            'Data': 'Footer project test #{}'.format(cache_buster()),
+        },
+        'Body': {
+            #'Text': {
+            #    'Data': 'string',
+            #    'Charset': 'string'
+            #},
+            'Html': {
+            'Data': body,
+            }
+        }
+        },
+    )
      
     status_code = result.get('ResponseMetadata').get('HTTPStatusCode')
     if str(status_code).startswith('2'):
-	return "Success!" 
+        return "Success!" 
     else:
         return "Something went wrong :("
