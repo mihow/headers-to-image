@@ -3,3 +3,5 @@ zappa
 Pillow
 geoip2
 python-dotenv
+raven
+raven[flask]
