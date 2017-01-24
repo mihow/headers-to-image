@@ -106,8 +106,12 @@ def serve_image(pil_img):
     img_io.seek(0)
     response = send_file(img_io, mimetype='image/jpeg')
     # See https://emailexpert.org/gmail-tracking-changes-the-fix-what-you-need-to-know/
-    # if 'google' in request.headers.get('User-Agent', ''):
-    #     response.content_length = 0 # breaks things after all :(
+    if 'GoogleImageProxy' in request.headers.get('User-Agent', ''):
+	# This works - we get a request, but we serve a broken image
+        # Can we log the unique request data, and then serve a redirect with a custom 
+        # image?
+        # response.content_length = 0
+        pass
     return response
 
 @app.route('/request_data.jpg')
@@ -181,7 +185,7 @@ def location_image(request_id=None):
         destination_name = "Unknown"
     txt = "{} => {} \r\n{} \r\n{}".format(
         source, destination_name, language, user_agent)
-    img = create_image(txt, width=400, height=64) 
+    img = create_image(txt, width=600, height=64) 
     return serve_image(img)
 
 @app.route('/location.json')
