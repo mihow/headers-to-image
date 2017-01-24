@@ -106,7 +106,8 @@ def serve_image(pil_img):
     img_io.seek(0)
     response = send_file(img_io, mimetype='image/jpeg')
     # See https://emailexpert.org/gmail-tracking-changes-the-fix-what-you-need-to-know/
-    # response.content_length = 0 # breaks things after all :(
+    # if 'google' in request.headers.get('User-Agent', ''):
+    #     response.content_length = 0 # breaks things after all :(
     return response
 
 @app.route('/request_data.jpg')
@@ -172,13 +173,15 @@ def summary():
 def location_image(request_id=None):
     source = SOURCE_CITY
     destination = get_location(request_data())
-    language = get_client_language(request_data())
+    language = get_client_language()
+    user_agent = request.headers.get('User-Agent')
     if destination:
         destination_name = destination.city.name
     else:
         destination_name = "Unknown"
-    txt = "{} => {} \r\n{}".format(source, destination_name, language)
-    img = create_image(txt, width=200, height=32) 
+    txt = "{} => {} \r\n{} \r\n{}".format(
+        source, destination_name, language, user_agent)
+    img = create_image(txt, width=400, height=64) 
     return serve_image(img)
 
 @app.route('/location.json')
@@ -248,12 +251,12 @@ def embed():
             buster1=cache_buster(), buster2=cache_buster())
 
 
-def get_client_language(request):
-    lang = request['environ'].get('HTTP_ACCEPT_LANGUAGE')
+def get_client_language():
+    lang = request.accept_languages
     # @TODO convert lang code to something more human friendly
     return lang
 
-def get_client_ip(request):
+def get_client_ip(request_dict):
     if os.environ.get('FLASK_DEBUG'):
         return '73.67.227.118'
 
@@ -290,7 +293,7 @@ def get_client_ip(request):
     ]
 
     for key in potential_ip_keys:
-        match = request['environ'].get(key)
+        match = request_dict['environ'].get(key)
         if match:
             for prefix in ignore_ip_prefixes:
                 if match.startswith(prefix):
