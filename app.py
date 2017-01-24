@@ -13,7 +13,16 @@ from flask.json import JSONEncoder
 from raven.contrib.flask import Sentry
 from PIL import Image, ImageDraw
 from nocache import nocache
+from dotenv import load_dotenv, find_dotenv
 
+
+# Logging configuration
+logging.basicConfig(format='%(levelname)s:%(message)s')
+log = logging.getLogger('footer')
+log.setLevel(logging.INFO)
+
+# Load environment vars from '.env.' file
+load_dotenv(find_dotenv())
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -21,20 +30,14 @@ app = Flask(__name__)
 # Alias for running directly with mod_wsgi
 application = app
 
-# Logging configuration
-logging.basicConfig(format='%(levelname)s:%(message)s')
-log = logging.getLogger('footer')
-log.setLevel(logging.INFO)
-
+# Configure remote logging
 sentry = Sentry(app, 
                 logging=True, 
                 level=logging.INFO, 
                 dsn=os.environ.get('SENTRY_DSN'))
 
-
 # Initialize Amazon Web Services
 ses = boto3.client('ses')
-
 
 # Static app variables
 SOURCE_CITY = "New York"

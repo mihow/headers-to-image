@@ -2,3 +2,4 @@ flask
 zappa
 Pillow
 geoip2
+python-dotenv
