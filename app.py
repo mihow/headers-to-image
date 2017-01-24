@@ -5,20 +5,40 @@ import os
 import StringIO
 import datetime as dt
 import random
-import boto3
+import logging
 
+import boto3
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
 from flask.json import JSONEncoder
+from raven.contrib.flask import Sentry
 from PIL import Image, ImageDraw
 from nocache import nocache
 
 
+# Initialize Flask app
 app = Flask(__name__)
+
+# Alias for running directly with mod_wsgi
 application = app
 
+# Logging configuration
+logging.basicConfig(format='%(levelname)s:%(message)s')
+log = logging.getLogger('footer')
+log.setLevel(logging.INFO)
+
+sentry = Sentry(app, 
+                logging=True, 
+                level=logging.INFO, 
+                dsn=os.environ.get('SENTRY_DSN'))
+
+
+# Initialize Amazon Web Services
 ses = boto3.client('ses')
 
+
+# Static app variables
 SOURCE_CITY = "New York"
+
 
 
 def cache_buster():
@@ -185,6 +205,7 @@ def location_image(request_id=None):
         destination_name = "Unknown"
     txt = "{} => {} \r\n{} \r\n{}".format(
         source, destination_name, language, user_agent)
+    log.info('Serving location image: {}'.format(txt))
     img = create_image(txt, width=600, height=64) 
     return serve_image(img)
 
