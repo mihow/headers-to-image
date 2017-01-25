@@ -404,7 +404,6 @@ def send_email():
                 debug=debug))
 
     body = body.encode('utf8')
-    return body
 
     result = ses.send_email(
     Source='footer@bunsen.town',
