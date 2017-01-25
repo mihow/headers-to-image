@@ -349,11 +349,54 @@ def get_location(request):
         return None
 
 
+def ga_image_url(request_id, debug=True):
+    if debug:
+        base_url = 'https://www.google-analytics.com/debug/collect?v=1'
+    else:
+        base_url = 'https://www.google-analytics.com/collect?v=1'
+
+    url = ('{base_url}'
+           '&tid={ga_id}'
+           '&cid={request_id}'
+           '&t=event&ec=email&ea=open'
+           '&dp=/email/{request_id}'
+           ''.format(
+              base_url=base_url,
+              ga_id=os.environ.get('GOOGLE_ANALYTICS_ID'),
+              request_id=request_id)
+          )
+
+    return url
+
 @app.route('/email', methods=['POST'])
 def send_email():
     email = request.form['email']
-    body = 'Hello! Your image is below: <br><br><img src="{}"><br><br>-Footer'.format(
-    url_for('location_image', request_id=cache_buster(), _external=True))
+    body_tmpl = """
+    Hello! Your image is below: <br><br>
+
+    {% autoescape false %}
+    <img src="{{ footer_img_url }}" 
+      alt="Image with your location, etc should be here."><br><br>
+    {% endautoescape %}
+
+    -Footer <br><br>
+
+    {% autoescape false %}
+    <img src="{{ google_image_url }}">
+    {% endautoescape %}
+    """
+
+    email_id = cache_buster()
+
+    debug=os.environ.get('FLASK_DEBUG', False)
+    body = render_template_string(
+            body_tmpl, 
+            footer_img_url=url_for('location_image', 
+                                   request_id=email_id,
+                                   _external=True),
+            google_image_url=ga_image_url(email_id, debug=debug))
+
+    body = body.encode('utf8')
 
     result = ses.send_email(
     Source='footer@bunsen.town',
