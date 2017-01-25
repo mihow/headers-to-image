@@ -6,6 +6,7 @@ import StringIO
 import datetime as dt
 import random
 import logging
+import md5
 
 import boto3
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
@@ -349,7 +350,7 @@ def get_location(request):
         return None
 
 
-def ga_image_url(request_id, debug=True):
+def ga_image_url(request_id, user_id, debug=True):
     if debug:
         base_url = 'https://www.google-analytics.com/debug/collect?v=1'
     else:
@@ -357,13 +358,15 @@ def ga_image_url(request_id, debug=True):
 
     url = ('{base_url}'
            '&tid={ga_id}'
+           '&uid={user_id}'
            '&cid={request_id}'
            '&t=event&ec=email&ea=open'
            '&dp=/email/{request_id}'
            ''.format(
               base_url=base_url,
               ga_id=os.environ.get('GOOGLE_ANALYTICS_ID'),
-              request_id=request_id)
+              request_id=request_id,
+              user_id=user_id)
           )
 
     return url
@@ -386,17 +389,22 @@ def send_email():
     {% endautoescape %}
     """
 
-    email_id = cache_buster()
+    request_id = cache_buster()
+    user_id = md5.md5(email).hexdigest()
 
     debug=os.environ.get('FLASK_DEBUG', False)
     body = render_template_string(
             body_tmpl, 
             footer_img_url=url_for('location_image', 
-                                   request_id=email_id,
+                                   request_id=request_id,
                                    _external=True),
-            google_image_url=ga_image_url(email_id, debug=debug))
+            google_image_url=ga_image_url(
+                request_id, 
+                user_id,
+                debug=debug))
 
     body = body.encode('utf8')
+    return body
 
     result = ses.send_email(
     Source='footer@bunsen.town',
