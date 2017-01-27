@@ -7,6 +7,8 @@ import datetime as dt
 import random
 import logging
 import md5
+import datetime 
+import calendar 
 
 import boto3
 from flask import Flask, request, send_file, redirect, url_for, jsonify, render_template_string
@@ -39,9 +41,11 @@ sentry = Sentry(app,
 
 # Initialize Amazon Web Services
 ses = boto3.client('ses')
+db  = boto3.client('dynamodb')
 
 # Static app variables
 SOURCE_CITY = "New York"
+DB_TABLE_NAME = "Footer-dev"
 
 
 
@@ -433,3 +437,110 @@ def send_email():
         return "Success!" 
     else:
         return "Something went wrong :("
+
+
+def get_table():
+    tables = db.list_tables()
+    if DB_TABLE_NAME not in tables['TableNames']:
+	result = db.create_table(
+	    TableName=DB_TABLE_NAME,
+	    AttributeDefinitions=[
+		{
+		    'AttributeName': 'request_id',
+		    'AttributeType': 'S'
+		},
+		{
+		    'AttributeName': 'image_url',
+		    'AttributeType': 'S'
+		},
+		{
+		    'AttributeName': 'first_record_txt',
+		    'AttributeType': 'S'
+		},
+		{
+		    'AttributeName': 'first_record',
+		    'AttributeType': 'M'
+		},
+		{
+		    'AttributeName': 'records',
+		    'AttributeType': 'L'
+		},
+		{
+		    'AttributeName': 'request_count',
+		    'AttributeType': 'N'
+		},
+		{
+		    'AttributeName': 'created',
+		    'AttributeType': 'N'
+		},
+		{
+		    'AttributeName': 'updated',
+		    'AttributeType': 'N'
+		},
+	    ],
+	    KeySchema=[
+		{
+		    'AttributeName': 'request_id',
+		    'KeyType': 'HASH'
+		},
+		{
+		    'AttributeName': 'created',
+		    'KeyType': 'RANGE'
+		},
+		{
+		    'AttributeName': 'updated',
+		    'KeyType': 'RANGE'
+		},
+		{
+		    'AttributeName': 'request_count',
+		    'KeyType': 'RANGE'
+		},
+	    ],
+	    ProvisionedThroughput={
+		'ReadCapacityUnits': 123,
+		'WriteCapacityUnits': 123
+	    },
+	)
+    table = db[DB_TABLE_NAME]
+    return table
+
+
+def to_timestamp(dt=None):
+    # Convert datetime to "seconds since the epoch" in UTC
+    # if no date is given then generates a timestamp for 'now'
+    if not dt:
+        dt = datetime.datetime.utcnow()
+    ts = calendar.timegm(dt.utctimetuple())
+    return ts
+
+def from_timestamp(ts):
+    dt = datetime.datetime.utcfromtimestamp(ts)
+    return dt
+
+def create_dynamo_obj(record):
+    item = {
+        'request_id' {
+            'N': record['request_id'] 
+        },
+        'request_count' {
+            'N': 1
+        },
+        'created' {
+            'N': record['created']
+        },
+        'updated' {
+            'N': record['updated']
+        },
+    }
+    return item
+
+def save_record(record):
+    item = create_dynamo_obj(record)
+
+    resp = db.put_item(
+        TableName=DB_TABLE_NAME,
+        Item=item,
+    )
+
+    response = db.scan(TableName=list_key)
+    pass
